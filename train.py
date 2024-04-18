@@ -57,8 +57,8 @@ def train_batch(x, y, model, opt, loss_fn):
     prediction = model(x)
     batch_loss = loss_fn(prediction, y)
     batch_loss.backward()
-    optimizer.step()
-    optimizer.zero_grad()
+    opt.step()
+    opt.zero_grad()
     return batch_loss.item()
 
 @torch.no_grad()
