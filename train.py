@@ -26,7 +26,7 @@ import matplotlib.ticker as mticker
 
 def get_images(folder, is_damaged):
     dictionary = dict()
-    directories = ['dog','fish','cathedral','french_horn','gas_pump','garbage_truck','golf_ball','sawing','skydive','stereo']
+    directories = ['dog','fish','cathedral','french_horn','gas_pump','garbage_truck','golf_ball','sawing','stereo']
     if is_damaged == True:
         #do something here
         #split folder somehow
@@ -69,11 +69,11 @@ def accuracy(x, y, model):
     return is_correct.cpu().numpy().tolist()
 
 def get_data():
-    train = get_images(os.getcwd() + '/imagenette2/train/', False)
-    train_damaged = get_images(os.getcwd() + '/imagenette2/damagenet_data/', True)
+    train = get_images(os.getcwd() + '/imagenette2/train', False)
+    train_damaged = get_images(os.getcwd() + '/damagenet_data', True)
     #trn_dl = DataLoader(train, batch_size=32, shuffle=True, drop_last = True)
     val = get_images(os.getcwd() + '/imagenette2/val/', False)
-    val_damaged = get_images(os.getcwd() + '/imagenette2/damagenet_data/', True)
+    val_damaged = get_images(os.getcwd() + '/damagenet_data', True)
     #val_dl = DataLoader(val, batch_size=32, shuffle=True, drop_last = True)
     return train, val
 
