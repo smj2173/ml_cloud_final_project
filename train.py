@@ -24,9 +24,13 @@ import matplotlib.ticker as mticker
 #!pip install torch_summary
 #from torchsummary import summary
 
-def get_images(folder):
+def get_images(folder, is_damaged):
     dictionary = dict()
-    directories = ['dog','fish']
+    directories = ['dog','fish','cathedral','french_horn','gas_pump','garbage_truck','golf_ball','sawing','skydive','stereo']
+    if is_damaged == True:
+        #do something here
+        #split folder somehow
+        print("damaged, need to split")
     for d in directories:
         for item in os.listdir(folder + "/" + d):
             if item.split(".")[-1] in ('png', 'jpg'): #this is mapping file name to label
@@ -65,9 +69,11 @@ def accuracy(x, y, model):
     return is_correct.cpu().numpy().tolist()
 
 def get_data():
-    train = get_images(os.getcwd() + '/imagenette2/train/')
+    train = get_images(os.getcwd() + '/imagenette2/train/', False)
+    train_damaged = get_images(os.getcwd() + '/imagenette2/damagenet_data/', True)
     #trn_dl = DataLoader(train, batch_size=32, shuffle=True, drop_last = True)
-    val = get_images(os.getcwd() + '/imagenette2/val/')
+    val = get_images(os.getcwd() + '/imagenette2/val/', False)
+    val_damaged = get_images(os.getcwd() + '/imagenette2/damagenet_data/', True)
     #val_dl = DataLoader(val, batch_size=32, shuffle=True, drop_last = True)
     return train, val
 
