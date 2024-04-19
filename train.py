@@ -175,6 +175,6 @@ if __name__=="__main__":
         print('-'*50)
         
     # Save the trained model weights and the loss/accuracy plots
-    save_model(args.num_epochs, model, optimizer, loss_fn)
+    save_model(args.num_epochs, model, optimizer, loss_fn, args.damaged)
     save_plots(train_accuracy, valid_accuracy, train_loss, valid_loss, args.damaged)
     print('Complete!')
