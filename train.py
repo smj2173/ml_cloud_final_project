@@ -8,21 +8,16 @@ from PIL import Image
 import numpy as np
 import os
 from torch import optim
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
 import cv2, glob, numpy as np, pandas as pd
 import matplotlib.pyplot as plt
 from glob import glob
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
-from random import shuffle, seed
-from torch.utils.data import DataLoader, Dataset
 import matplotlib.ticker as mtick
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
-
-#!pip install torch_summary
-#from torchsummary import summary
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def get_images(folder, is_damaged):
     dictionary = dict()
