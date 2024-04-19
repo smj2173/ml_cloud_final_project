@@ -89,7 +89,6 @@ def validate(model, valid_loader, loss_fn):
     with torch.no_grad():
         for _, data in tqdm(enumerate(valid_loader), total=len(valid_loader)):
             counter += 1
-            
             image, labels = data
             image = image.to(device)
             labels = labels.to(device)
@@ -141,6 +140,7 @@ if __name__=="__main__":
         description="Trains a Resnet18 model on Imagenette data by default, or combined Imagenette and DamageNet data using --damaged"
     )
     parser.add_argument('-d', '--damaged', action='store_true', help="Include the damaged data in training")
+    parser.add_argument('-c', '--cpu', action='store_true', help="Use cpu to do training")
     parser.add_argument('-n', '--num_epochs', type=int, default=10, help="Number of epochs to run")
     parser.add_argument('-b', '--batch_size', type=int, default=32, help="Batch size")
     args = parser.parse_args()
@@ -150,7 +150,7 @@ if __name__=="__main__":
         print("Running training on the Imagenette dataset")
 
     # Setup cuda device and show whether CPU or GPU is being used
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
     if device == 'cuda':
         print('Running training on GPU')
     else:
