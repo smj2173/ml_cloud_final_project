@@ -1,39 +1,47 @@
 import torchvision
-import torch.nn as nn
-import torch
-import torch.nn.functional as F
-from torchvision import transforms,models,datasets
-import matplotlib.pyplot as plt
-from PIL import Image
-import numpy as np
-import os
-from torch import optim
-import cv2, glob, numpy as np, pandas as pd
-import matplotlib.pyplot as plt
-from glob import glob
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, Dataset
-import matplotlib.ticker as mtick
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+import argparse
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
+from tqdm import tqdm
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+def get_data(damaged, batch_size):
+    # the training transforms
+    train_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
+        transforms.RandomRotation(degrees=(30, 70)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5]
+        )
+    ])
+    # the validation transforms
+    valid_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5]
+        )
+    ])
 
-def get_images(folder, is_damaged):
-    dictionary = dict()
-    directories = ['dog','fish','cathedral','french_horn','gas_pump','garbage_truck','golf_ball','sawing','stereo']
-    if is_damaged == True:
-        #do something here
-        #split folder somehow
-        print("damaged, need to split")
-    for d in directories:
-        for item in os.listdir(folder + "/" + d):
-            if item.split(".")[-1] in ('png', 'jpg'): #this is mapping file name to label
-                dictionary[d] = item
-    return dictionary
+    data_root = './final_combined/' if damaged else './final_imagenette/'
+    train_data_root = data_root + 'train/'
+    val_data_root = data_root + 'val/'
+    train_dataset = torchvision.datasets.ImageFolder(root=train_data_root, transform=train_transform)
+    val_dataset = torchvision.datasets.ImageFolder(root=val_data_root, transform=valid_transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    return train_loader, valid_loader
 
 def get_model():
-    model = models.resnet18(pretrained=True)
+    model = torchvision.models.resnet18(pretrained=True)
     for param in model.parameters():
         param.requires_grad = False
     model.avgpool = nn.AdaptiveAvgPool2d(output_size=(1,1))
@@ -43,90 +51,132 @@ def get_model():
     nn.Dropout(0.2),
     nn.Linear(128, 1),
     nn.Sigmoid())
-    loss_fn = nn.BCELoss()
+    loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr= 1e-3)
     return model.to(device), loss_fn, optimizer
 
-def train_batch(x, y, model, opt, loss_fn):
+# training
+def train(model, train_loader, optimizer, loss_fn):
     model.train()
-    prediction = model(x)
-    batch_loss = loss_fn(prediction, y)
-    batch_loss.backward()
-    opt.step()
-    opt.zero_grad()
-    return batch_loss.item()
+    train_running_loss = 0.0
+    train_running_correct = 0
+    counter = 0
+    for _, data in tqdm(enumerate(train_loader), total=len(train_loader)):
+        counter += 1
+        image, labels = data
+        image = image.to(device)
+        labels = labels.to(device)
+        optimizer.zero_grad()
+        outputs = model(image)
+        loss = loss_fn(outputs, labels)
+        train_running_loss += loss.item()
+        _, preds = torch.max(outputs.data, 1)
+        train_running_correct += (preds == labels).sum().item()
+        loss.backward()
+        optimizer.step()
+    
+    # loss and accuracy for the complete epoch
+    epoch_loss = train_running_loss / counter
+    epoch_acc = 100. * (train_running_correct / len(train_loader.dataset))
+    return epoch_loss, epoch_acc
 
-@torch.no_grad()
-def accuracy(x, y, model):
+# validation
+def validate(model, valid_loader, loss_fn):
     model.eval()
-    prediction = model(x)
-    is_correct = (prediction > 0.5) == y
-    return is_correct.cpu().numpy().tolist()
+    valid_running_loss = 0.0
+    valid_running_correct = 0
+    counter = 0
+    with torch.no_grad():
+        for _, data in tqdm(enumerate(valid_loader), total=len(valid_loader)):
+            counter += 1
+            image, labels = data
+            image = image.to(device)
+            labels = labels.to(device)
+            outputs = model(image)
+            loss = loss_fn(outputs, labels)
+            valid_running_loss += loss.item()
+            _, preds = torch.max(outputs.data, 1)
+            valid_running_correct += (preds == labels).sum().item()
+        
+    # loss and accuracy for the complete epoch
+    epoch_loss = valid_running_loss / counter
+    epoch_acc = 100. * (valid_running_correct / len(valid_loader.dataset))
+    return epoch_loss, epoch_acc
 
-def get_data():
-    train = get_images(os.getcwd() + '/imagenette2/train', False)
-    train_damaged = get_images(os.getcwd() + '/damagenet_data', True)
-    #trn_dl = DataLoader(train, batch_size=32, shuffle=True, drop_last = True)
-    val = get_images(os.getcwd() + '/imagenette2/val/', False)
-    val_damaged = get_images(os.getcwd() + '/damagenet_data', True)
-    #val_dl = DataLoader(val, batch_size=32, shuffle=True, drop_last = True)
-    return train, val
-
-trn_dl, val_dl = get_data()
-model, loss_fn, optimizer = get_model()
-
-train_losses, train_accuracies = [], []
-val_accuracies = []
-
-print("All losses and accuracies are for each epoch")
-for epoch in range(5):
+def save_plots(train_accuracy, valid_accuracy, train_loss, valid_loss, damaged):
+    # accuracy plots
+    accuracy_plot_path = './outputs/combined_accuracy.png' if damaged else './outputs/imagenette_accuracy.png'
+    plt.figure(figsize=(10, 7))
+    plt.plot(train_accuracy, color='red', linestyle='-', label='train accuracy')
+    plt.plot(valid_accuracy, color='blue', linestyle='-', label='validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.savefig(accuracy_plot_path)
     
-    train_epoch_losses, train_epoch_accuracies = [], []
-    val_epoch_accuracies = []
+    # loss plots
+    loss_plot_path = './outputs/combined_loss.png' if damaged else './outputs/imagenette_loss.png'
+    plt.figure(figsize=(10, 7))
+    plt.plot(train_loss, color='red', label='train loss')
+    plt.plot(valid_loss, color='blue', label='validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(loss_plot_path)
 
-    for ix, batch in trn_dl.items():
-        x = batch
-        y = ix
-        batch_loss = train_batch(x, y, model, optimizer, loss_fn)
-        train_epoch_losses.append(batch_loss) 
-    train_epoch_loss = np.array(train_epoch_losses).mean()
+def save_model(num_epochs, model, optimizer, loss_fn, damaged):
+    output_location = './outputs/combined_model.pth' if damaged else './outputs/imagenette_model.pth' 
+    torch.save({
+                'epoch': num_epochs,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss_fn,
+                }, output_location)
 
-    for ix, batch in trn_dl.items():
-        x = batch
-        y = ix
-        is_correct = accuracy(x, y, model)
-        train_epoch_accuracies.extend(is_correct)
-    train_epoch_accuracy = np.mean(train_epoch_accuracies)
-    
-    for ix, batch in val_dl.items():
-        x = batch
-        y = ix
-        val_is_correct = accuracy(x, y, model)
-        val_epoch_accuracies.extend(val_is_correct)
-    val_epoch_accuracy = np.mean(val_epoch_accuracies)
+if __name__=="__main__": 
+    # Setup input arguments
+    parser = argparse.ArgumentParser(
+        prog="Applied ML Cloud Final Project Trainer",
+        description="Trains a Resnet18 model on Imagenette data by default, or combined Imagenette and DamageNet data using --damaged"
+    )
+    parser.add_argument('-d', '--damaged', action='store_true', help="Include the damaged data in training")
+    parser.add_argument('-c', '--cpu', action='store_true', help="Use cpu to do training")
+    parser.add_argument('-n', '--num_epochs', type=int, default=10, help="Number of epochs to run")
+    parser.add_argument('-b', '--batch_size', type=int, default=32, help="Batch size")
+    args = parser.parse_args()
+    if args.damaged:
+        print("Running training on the combined Imagenette and DamagedNet dataset")
+    else:
+        print("Running training on the Imagenette dataset")
 
-    print(f" epoch {epoch + 1}/5, Training Loss: {train_epoch_loss}, Training Accuracy: {train_epoch_accuracy}, Validation Accuracy: {val_epoch_accuracy}")
-    train_losses.append(train_epoch_loss)
-    train_accuracies.append(train_epoch_accuracy)
-    val_accuracies.append(val_epoch_accuracy)
-    
-    epochs = np.arange(5)+1
+    # Setup cuda device and show whether CPU or GPU is being used
+    device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
+    if device == 'cuda':
+        print('Running training on GPU')
+    else:
+        print('Running training on CPU')
 
-plt.plot(epochs, train_accuracies, 'b', label='Training accuracy')
-plt.plot(epochs, val_accuracies, 'r', label='Validation accuracy')
-plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
-plt.title('Training and validation accuracy with ResNet18 \nand 1K training data points')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.ylim(0.95,1)
-plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
-plt.legend()
-plt.grid('off')
-plt.show()
+    # Setup the input data (training and validation) and the final model
+    train_loader, valid_loader = get_data(args.damaged, args.batch_size)
+    model, loss_fn, optimizer = get_model()
 
-
-    
-    
-
-
-
+    # Iterate for the given number of epochs
+    print("Saving all losses and accuracies for each epoch")
+    train_loss, valid_loss = [], []
+    train_accuracy, valid_accuracy = [], []
+    for epoch in range(args.num_epochs):
+        print(f"[INFO]: Epoch {epoch+1} of {args.num_epochs}")
+        train_epoch_loss, train_epoch_acc = train(model, train_loader, optimizer, loss_fn)
+        valid_epoch_loss, valid_epoch_acc = validate(model, valid_loader,  loss_fn)
+        train_loss.append(train_epoch_loss)
+        valid_loss.append(valid_epoch_loss)
+        train_accuracy.append(train_epoch_acc)
+        valid_accuracy.append(valid_epoch_acc)
+        print(f"Training loss: {train_epoch_loss:.3f}, training acc: {train_epoch_acc:.3f}")
+        print(f"Validation loss: {valid_epoch_loss:.3f}, validation acc: {valid_epoch_acc:.3f}")
+        print('-'*50)
+        
+    # Save the trained model weights and the loss/accuracy plots
+    save_model(args.num_epochs, model, optimizer, loss_fn)
+    save_plots(train_accuracy, valid_accuracy, train_loss, valid_loss, args.damaged)
+    print('Complete!')
