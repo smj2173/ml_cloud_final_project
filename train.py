@@ -1,5 +1,6 @@
 import torchvision
 import torchvision.transforms as transforms
+from torchvision.models import ResNet18_Weights 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -41,7 +42,7 @@ def get_data(damaged, batch_size):
     return train_loader, valid_loader
 
 def get_model():
-    model = torchvision.models.resnet18(pretrained=True)
+    model = torchvision.models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     for param in model.parameters():
         param.requires_grad = False
     model.avgpool = nn.AdaptiveAvgPool2d(output_size=(1,1))
@@ -49,13 +50,12 @@ def get_model():
     nn.Linear(512, 128),
     nn.ReLU(),
     nn.Dropout(0.2),
-    nn.Linear(128, 1),
-    nn.Sigmoid())
+    nn.Linear(128, 10),
+    nn.Softmax(0))
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr= 1e-3)
     return model.to(device), loss_fn, optimizer
 
-# training
 def train(model, train_loader, optimizer, loss_fn):
     model.train()
     train_running_loss = 0.0
@@ -80,7 +80,6 @@ def train(model, train_loader, optimizer, loss_fn):
     epoch_acc = 100. * (train_running_correct / len(train_loader.dataset))
     return epoch_loss, epoch_acc
 
-# validation
 def validate(model, valid_loader, loss_fn):
     model.eval()
     valid_running_loss = 0.0
@@ -161,7 +160,6 @@ if __name__=="__main__":
     model, loss_fn, optimizer = get_model()
 
     # Iterate for the given number of epochs
-    print("Saving all losses and accuracies for each epoch")
     train_loss, valid_loss = [], []
     train_accuracy, valid_accuracy = [], []
     for epoch in range(args.num_epochs):
