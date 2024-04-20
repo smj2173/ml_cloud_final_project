@@ -26,7 +26,7 @@ def get_data(test_type):
     else:
         data_root='./final_imagenette/test/'
     test_dataset = torchvision.datasets.ImageFolder(root=data_root, transform=test_transform)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=True)
+    test_loader = DataLoader(test_dataset, shuffle=True)
     return test_loader
 
 def get_model(model_path):
@@ -34,13 +34,7 @@ def get_model(model_path):
     model = torchvision.models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     for param in model.parameters():
         param.requires_grad = False
-    model.avgpool = nn.AdaptiveAvgPool2d(output_size=(1,1))
-    model.fc = nn.Sequential(nn.Flatten(),
-    nn.Linear(512, 128),
-    nn.ReLU(),
-    nn.Dropout(0.2),
-    nn.Linear(128, 10),
-    nn.Softmax(0))
+    model.fc = nn.Linear(model.fc.in_features, 10)
 
     # Load the model weights and state from the input path
     checkpoint = torch.load(model_path)

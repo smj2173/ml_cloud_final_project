@@ -46,12 +46,7 @@ def get_model():
     for param in model.parameters():
         param.requires_grad = False
     model.avgpool = nn.AdaptiveAvgPool2d(output_size=(1,1))
-    model.fc = nn.Sequential(nn.Flatten(),
-    nn.Linear(512, 128),
-    nn.ReLU(),
-    nn.Dropout(0.2),
-    nn.Linear(128, 10),
-    nn.Softmax(0))
+    model.fc = nn.Linear(model.fc.in_features, 10)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr= 1e-3)
     return model.to(device), loss_fn, optimizer
