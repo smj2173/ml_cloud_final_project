@@ -26,7 +26,7 @@ def get_data(test_type):
     else:
         data_root='./final_imagenette/test/'
     test_dataset = torchvision.datasets.ImageFolder(root=data_root, transform=test_transform)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=True)
     return test_loader
 
 def get_model(model_path):
