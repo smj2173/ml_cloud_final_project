@@ -38,7 +38,7 @@ def get_data(damaged, batch_size):
     train_dataset = torchvision.datasets.ImageFolder(root=train_data_root, transform=train_transform)
     val_dataset = torchvision.datasets.ImageFolder(root=val_data_root, transform=valid_transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
-    valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     return train_loader, valid_loader
 
 def get_model():
@@ -139,7 +139,6 @@ if __name__=="__main__":
         description="Trains a Resnet18 model on Imagenette data by default, or combined Imagenette and DamageNet data using --damaged"
     )
     parser.add_argument('-d', '--damaged', action='store_true', help="Include the damaged data in training")
-    parser.add_argument('-c', '--cpu', action='store_true', help="Use cpu to do training")
     parser.add_argument('-n', '--num_epochs', type=int, default=10, help="Number of epochs to run")
     parser.add_argument('-b', '--batch_size', type=int, default=32, help="Batch size")
     args = parser.parse_args()
@@ -149,7 +148,7 @@ if __name__=="__main__":
         print("Running training on the Imagenette dataset")
 
     # Setup cuda device and show whether CPU or GPU is being used
-    device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if device == 'cuda':
         print('Running training on GPU')
     else:
