@@ -38,7 +38,7 @@ def get_data(damaged, batch_size):
     train_dataset = torchvision.datasets.ImageFolder(root=train_data_root, transform=train_transform)
     val_dataset = torchvision.datasets.ImageFolder(root=val_data_root, transform=valid_transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
-    valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+    valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     return train_loader, valid_loader
 
 def get_model():
