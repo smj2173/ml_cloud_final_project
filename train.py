@@ -45,7 +45,6 @@ def get_model():
     model = torchvision.models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     for param in model.parameters():
         param.requires_grad = False
-    model.avgpool = nn.AdaptiveAvgPool2d(output_size=(1,1))
     model.fc = nn.Linear(model.fc.in_features, 10)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr= 1e-3)
