@@ -47,7 +47,7 @@ def get_model():
         param.requires_grad = False
     model.fc = nn.Linear(model.fc.in_features, 10)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr= 1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr= 1e-4)
     return model.to(device), loss_fn, optimizer
 
 def train(model, train_loader, optimizer, loss_fn):
