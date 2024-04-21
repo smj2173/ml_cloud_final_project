@@ -26,14 +26,14 @@ def index():
 @app.route('/classify', methods=['POST'])
 def classify():
 
-    # Error check if file exists
-    if 'image' not in request.files:
-        return "No image found in request!"
+    # # Error check if file exists
+    # if 'image' not in request.files:
+    #     return "No image found in request!"
 
-    # Error check if image was selected
-    image_file = request.files['image']
-    if image_file.filename == '':
-        return "No image selected!"
+    # # Error check if image was selected
+    # image_file = request.files['image']
+    # if image_file.filename == '':
+    #     return "No image selected!"
 
     # Open image and get model outputs (classifications)
     # TODO: May have to preprocess the iamge?
