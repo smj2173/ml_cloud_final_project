@@ -14,8 +14,8 @@ app = Flask(__name__)
 
 
 # Load the PyTorch models
-imagenet = torch.load('model1.pth')
-damagenet = torch.load('model2.pth')
+imagenet = torch.load('outputs/imagenette_model.pth')
+combined = torch.load('outputs/combined_model.pth')
 
 # Page without image uploaded
 @app.route('/')
@@ -39,11 +39,11 @@ def classify():
     # TODO: May have to preprocess the iamge?
     image = Image.open(image_file)
     imagenet_pred = model1(image)
-    damagenet_pred = model2(image)
+    combined_pred = model2(image)
     
     # Print out the outputs
-    result_html = f"<p>Model 1 Classification: {output1}</p>"
-    result_html += f"<p>Model 2 Classification: {output2}</p>"
+    result_html = f"<p>Model 1 Classification: {imagenet_pred}</p>"
+    result_html += f"<p>Model 2 Classification: {combined_pred}</p>"
     
     # Render the new html
     return result_html
