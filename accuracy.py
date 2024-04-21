@@ -20,11 +20,11 @@ def get_data(test_type):
 
     data_root = None
     if test_type == 'combined':
-        data_root='./test_combined/test/'
+        data_root='./final_combined/test/'
     elif test_type == 'damagenet':
-        data_root='./test_damagenet/test/'
+        data_root='./final_damagenet/test/'
     else:
-        data_root='./test_imagenette/test/'
+        data_root='./final_imagenette/test/'
     test_dataset = torchvision.datasets.ImageFolder(root=data_root, transform=test_transform)
     test_loader = DataLoader(test_dataset, shuffle=True)
     return test_loader
