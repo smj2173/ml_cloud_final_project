@@ -32,7 +32,7 @@ def get_data(damaged, batch_size):
         )
     ])
 
-    data_root = './final_combined/' if damaged else './final_imagenette/'
+    data_root = './test_combined/' if damaged else './test_imagenette/'
     train_data_root = data_root + 'train/'
     val_data_root = data_root + 'val/'
     train_dataset = torchvision.datasets.ImageFolder(root=train_data_root, transform=train_transform)
