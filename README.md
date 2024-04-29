@@ -22,13 +22,15 @@ The python script can be run by running the following command:
 
 By default, we choose the combined model and the combined test dataset to run the tests on. By using the ```-m``` flag, we can choose another model type and by setting the ```-t``` flag, we can choose another test dataset (options are **combined, damagenet, and imagenette**). The following shows an example run.
 
-``` python accuracy.py -m ./outputs/combined_model.pth -t combined ```
+``` python accuracy.py -m ./outputs/imagenette_model.pth -t damagenet ```
 
 ## How to run server.py
 
 The python script can be run by running the following command:
 
 ``` python server.py ```
+
+From there, a Flask application will load up and the inferencing engine will be available at the following URL: http://localhost:5000/. **Note that you must have an NVIDIA GPU in order to run this script appropriately.**
 
 ## File Directory
 
